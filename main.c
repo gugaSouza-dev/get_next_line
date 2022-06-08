@@ -8,13 +8,20 @@ char	*get_next_line(int fd);
 int    main(void)
 {
     int     fd;
+	char	*str = "";
+	// int		repeat = -1;
 
     // Pedir ao sistema um identificador númerico(fd) que representa o arquivo
-    fd = open("./file.txt", O_RDONLY);
+	fd = open("./file.txt", O_RDONLY);
     printf("fd = %d\n", fd);
-	for (int i=0; i < 5; ++i)
+	// while (repeat++ <= 48)
+	while (str != NULL)
 	{
-		printf("final return = %s", get_next_line(fd));
+		str = get_next_line(fd);
+		printf("%s", str);
+		free(str);
 	}
+
+	close(fd);
 	return (0);
 }
