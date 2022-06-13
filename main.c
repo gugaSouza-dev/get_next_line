@@ -11,17 +11,16 @@ int    main(void)
 	char	*str = "";
 	// int		repeat = -1;
 
-    // Pedir ao sistema um identificador númerico(fd) que representa o arquivo
+    // PRECISO DAR FREE NA STATIC?
 	fd = open("./file.txt", O_RDONLY);
     printf("fd = %d\n", fd);
-	// while (repeat++ <= 48)
+	// while (repeat++ <= 10)
 	while (str != NULL)
 	{
 		str = get_next_line(fd);
 		printf("%s", str);
 		free(str);
 	}
-
 	close(fd);
 	return (0);
 }
