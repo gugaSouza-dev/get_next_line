@@ -6,7 +6,7 @@
 /*   By: coder <coder@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/05/10 16:38:50 by gusouza-          #+#    #+#             */
-/*   Updated: 2022/06/13 06:05:11 by coder            ###   ########.fr       */
+/*   Updated: 2022/06/16 01:26:24 by coder            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,7 +58,8 @@ static char	*waste_skipper(char *line_tracker, int index, int *total_read)
 	else
 		ft_strlcpy(track_holder, line_tracker + index, BUFFER_SIZE);
 	free(line_tracker);
-	line_tracker = track_holder;
+	if (track_holder)
+		line_tracker = track_holder;
 	return (track_holder);
 }
 
@@ -114,12 +115,14 @@ char	*get_next_line(int fd)
 	track_holder = waste_skipper(line_tracker, i + 1, &total_read);
 	if (track_holder)
 		line_tracker = track_holder;
-	if ((ft_strncmp(line_tracker, line) == 0) && (total_read < BUFFER_SIZE)
-		&& (i > 0))
+	if ((total_read <= BUFFER_SIZE) && (i > 0))
 	{
-		free(line_tracker);
-		line_tracker = NULL;
-		return (line);
+		if (ft_strncmp(line_tracker, line) == 0)
+		{
+			free(line_tracker);
+			line_tracker = NULL;
+			return (line);
+		}
 	}
 	return (line);
 }
