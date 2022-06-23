@@ -5,124 +5,91 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: coder <coder@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/10 16:38:50 by gusouza-          #+#    #+#             */
-/*   Updated: 2022/06/16 01:26:24 by coder            ###   ########.fr       */
+/*   Created: 2022/06/15 20:20:41 by coder             #+#    #+#             */
+/*   Updated: 2022/06/23 16:59:50 by coder            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 #include <unistd.h>
 
-static char	*read_file(char *line_tracker, int fd, int *total_read)
+static void	buffer_cleaner(char	*buffer, char *raw_line, int new_line_end)
 {
-	char	*buffer;
-	char	*bananinha;
+	int	post_line_len;
 
-	buffer = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
-	if (line_tracker == NULL)
-		line_tracker = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
-	while (ft_strchr(line_tracker, '\n') == NULL && *total_read > 0)
+	if (raw_line[new_line_end])
 	{
-		*total_read = read(fd, buffer, BUFFER_SIZE);
-		if (*total_read <= 0 && line_tracker[0] == '\0')
-		{
-			free(buffer);
-			free(line_tracker);
-			return (NULL);
-		}
-		if (*total_read != BUFFER_SIZE && *total_read > 0)
-			buffer[*total_read] = '\0';
-		if (*total_read == 0)
-			break ;
-		bananinha = line_tracker;
-		line_tracker = ft_strjoin(line_tracker, buffer);
-		free(bananinha);
+		post_line_len = ft_strlen(&raw_line[new_line_end]);
+		ft_strlcpy(buffer, &raw_line[new_line_end], post_line_len + 1);
 	}
-	free(buffer);
-	return (line_tracker);
-}
-
-static char	*waste_skipper(char *line_tracker, int index, int *total_read)
-{
-	int		str_len;
-	char	*track_holder;
-
-	if (*(line_tracker + index - 1) == '\0')
-		return (NULL);
-	str_len = ft_strlen(line_tracker + index);
-	if (str_len == 0 && *total_read < 0)
-		return (NULL);
-	track_holder = ft_calloc(str_len + 1, sizeof(char));
-	if (BUFFER_SIZE == 1)
-		ft_strlcpy(track_holder, line_tracker + index, BUFFER_SIZE + 1);
 	else
-		ft_strlcpy(track_holder, line_tracker + index, BUFFER_SIZE);
-	free(line_tracker);
-	if (track_holder)
-		line_tracker = track_holder;
-	return (track_holder);
+		buffer[0] = '\0';
+	free(raw_line);
 }
 
-int	ft_strncmp(const char *s1, const char *s2)
-{
-	size_t			i;
-	unsigned char	*s1_caster;
-	unsigned char	*s2_caster;
-
-	if (!s1 || !s2)
-		return (-1);
-	if (ft_strlen(s1) != ft_strlen(s2))
-		return (-1);
-	i = 0;
-	s1_caster = (unsigned char *)s1;
-	s2_caster = (unsigned char *)s2;
-	while ((s1_caster[i] && s2_caster[i]))
-	{
-		if (s1_caster[i] != s2_caster[i])
-			return (s1_caster[i] - s2_caster[i]);
-		i++;
-	}
-	return (0);
-}
-
-static int	line_preset(char **line, char *line_tracker)
+static int	line_preset(char **line, char *raw_line)
 {
 	int	i;
 
 	i = 0;
-	while (line_tracker[i] != '\n' && line_tracker[i])
+	while (raw_line[i] != '\n' && raw_line[i])
 		i++;
 	*line = ft_calloc((i + 2), sizeof(char));
-	return (i);
+	if (raw_line[i] == '\0')
+		return (i);
+	return (i + 1);
+}
+
+static char	*buffer_swap(char *raw_line, char *buffer)
+{
+	char	*temp;
+
+	temp = raw_line;
+	raw_line = ft_strjoin(raw_line, buffer);
+	free(temp);
+	return (raw_line);
+}
+
+static char	*read_file(char *buffer, int fd)
+{
+	char	*raw_line;
+	int		total_read;
+
+	total_read = 1;
+	raw_line = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
+	if (buffer[0] != '\0')
+		raw_line = buffer_swap(raw_line, buffer);
+	while (ft_strchr(buffer, '\n') == NULL && total_read > 0)
+	{
+		total_read = read(fd, buffer, BUFFER_SIZE);
+		if (total_read <= 0 && buffer[0] == '\0')
+		{
+			free(raw_line);
+			return (NULL);
+		}
+		if (total_read != BUFFER_SIZE && total_read > 0)
+			buffer[total_read] = '\0';
+		if (total_read == 0)
+			break ;
+		raw_line = buffer_swap(raw_line, buffer);
+	}
+	return (raw_line);
 }
 
 char	*get_next_line(int fd)
 {
-	static char	*line_tracker;
+	static char	buffer[BUFFER_SIZE + 1];
+	char		*raw_line;
 	char		*line;
-	char		*track_holder;
-	int			i;
-	int			total_read;
+	int			new_line_end;
 
-	if ((BUFFER_SIZE < 1) || (fd < 0) || (fd > 1024))
+	if (fd < 0 || BUFFER_SIZE < 1)
 		return (NULL);
-	total_read = 1;
-	line_tracker = read_file(line_tracker, fd, &total_read);
-	if (line_tracker == NULL)
+	raw_line = read_file(buffer, fd);
+	if (raw_line == NULL)
 		return (NULL);
-	i = line_preset(&line, line_tracker);
-	ft_strlcpy(line, line_tracker, i + 2);
-	track_holder = waste_skipper(line_tracker, i + 1, &total_read);
-	if (track_holder)
-		line_tracker = track_holder;
-	if ((total_read <= BUFFER_SIZE) && (i > 0))
-	{
-		if (ft_strncmp(line_tracker, line) == 0)
-		{
-			free(line_tracker);
-			line_tracker = NULL;
-			return (line);
-		}
-	}
+	new_line_end = line_preset(&line, raw_line);
+	ft_strlcpy(line, raw_line, new_line_end + 1);
+	buffer_cleaner(buffer, raw_line, new_line_end);
 	return (line);
 }
